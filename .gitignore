@@ -1,0 +1,4 @@
+# Sometimes the fish binary likes to show up here.
+# We never want to check it in.
+fish/fish
+
