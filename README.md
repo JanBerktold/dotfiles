@@ -7,6 +7,6 @@ This is my personal configuration.
 ## Installation on Ubuntu
 
 ```bash
-git clone https://github.com/JanBerktold/dotfiles ~/dotfiles
+git clone git@github.com:JanBerktold/dotfiles.git ~/dotfiles
 ~/dotfiles/install.sh 
 ```
