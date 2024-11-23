@@ -22,11 +22,52 @@ try_sudo() {
     fi
 }
 
+get_username() {
+    # Try $USER first
+    if [ -n "${USER-}" ]; then
+        echo "$USER"
+        return
+    fi
+
+    # Try whoami command
+    if command -v whoami >/dev/null 2>&1; then
+        whoami
+        return
+    fi
+
+    # Try logname command
+    if command -v logname >/dev/null 2>&1; then
+        logname
+        return
+    fi
+
+    # Last resort: parse passwd file
+    id -un
+}
+
 dotfiles=~/dotfiles
 
 if ! is_ubuntu; then
 	echo "Currently, only Ubuntu is supported"
 	exit 1
+fi
+
+# Install Fish
+echo "Updating package lists..."
+try_sudo apt-get update
+
+# Check if fish is already installed
+if ! command -v fish >/dev/null 2>&1; then
+	try_sudo apt-get install --assume-yes fish
+
+	# Check if fish is already in /etc/shells
+	if ! grep -q "^$FISH_PATH$" /etc/shells; then
+        	echo "Adding Fish to /etc/shells..."
+        	try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
+        fi
+	        
+	echo "Changing default shell to Fish..."
+	try_sudo chsh -s "$(which fish)" "$(get_username)"
 fi
 
 # Setup the fish config
@@ -41,7 +82,7 @@ fi
 
 # If we're running on WSL2, then let's use the Windows 1Password agent.
 # It will have our ssh keys.
-if [[ is_wsl2 ]]; then
+if is_wsl2; then
 	echo "Configured git to use the Windows 1Password ssh.exe agent"
 	git config --global core.sshCommand "ssh.exe"
 fi
