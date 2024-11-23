@@ -1,0 +1,14 @@
+name: Validate install.sh
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  validate-setup-on-ubuntu22:
+    name: Run setup.sh on Ubuntu
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./test/test-ubuntu.sh
