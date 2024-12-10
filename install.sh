@@ -45,7 +45,9 @@ get_username() {
     id -un
 }
 
-dotfiles=~/dotfiles
+# Read where our dotfiles repository was checked out.
+# Typically, this would be ~/dotfiles, but we can't rely on that.
+dotfiles="$(pwd)"
 
 if ! is_ubuntu; then
 	echo "Currently, only Ubuntu is supported"
