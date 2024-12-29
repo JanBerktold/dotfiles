@@ -61,25 +61,28 @@ try_sudo apt-get update
 # Check if fish is already installed
 if ! command -v fish >/dev/null 2>&1; then
 	try_sudo apt-get install --assume-yes fish
-
-	# Check if fish is already in /etc/shells
-	if ! grep -q "^$FISH_PATH$" /etc/shells; then
-        	echo "Adding Fish to /etc/shells..."
-        	try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
-        fi
-	        
-	echo "Changing default shell to Fish..."
-	try_sudo chsh -s "$(which fish)" "$(get_username)"
 fi
+
+# Check if fish is already in /etc/shells
+if ! grep -q "^$FISH_PATH$" /etc/shells; then
+        echo "Adding Fish to /etc/shells..."
+       	try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
+fi
+
+echo "Changing default shell to Fish..."
+try_sudo chsh -s "$(which fish)" "$(get_username)"
 
 # Setup the fish config
 mkdir -p ~/.config
 ln -sf $dotfiles/fish ~/.config/fish 
 
+# Setup the git config
+ln -sf $dotfiles/git ~/.config/git
+
 # Ensure we have git installed
 if is_ubuntu; then
 	try_sudo apt-get update
-	try_sudo apt-get install --assume-yes git
+	try_sudo apt-get install --assume-yes git vim curl build-essential
 fi
 
 # If we're running on WSL2, then let's use the Windows 1Password agent.
@@ -97,6 +100,11 @@ if is_ubuntu; then
 	# The .deb package installs `bat` as `batcat`, so let's symlink it back.
 	mkdir -p ~/.local/bin
 	ln -sf /usr/bin/batcat ~/.local/bin/bat
+fi
+
+# Install Rust
+if is_ubuntu; then
+	curl https://sh.rustup.rs -sSf | sh -s -- -y
 fi
 
 echo "dotfiles install finished"
