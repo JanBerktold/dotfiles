@@ -82,7 +82,7 @@ ln -sf $dotfiles/git ~/.config/git
 # Ensure we have git installed
 if is_ubuntu; then
 	try_sudo apt-get update
-	try_sudo apt-get install --assume-yes git vim curl build-essential
+	try_sudo apt-get install --assume-yes git vim curl build-essential htop
 fi
 
 # If we're running on WSL2, then let's use the Windows 1Password agent.
