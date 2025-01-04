@@ -3,5 +3,5 @@
 set -e
 
 # Run it twice to ensure idempotency.
-/home/root/dotfiles/install.sh
-/home/root/dotfiles/install.sh
+./install.sh
+./install.sh
