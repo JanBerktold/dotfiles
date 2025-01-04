@@ -120,13 +120,15 @@ if is_wsl2; then
 fi
 
 # Install [bat]https://github.com/sharkdp/bat), and replace cat with it.
+echo "Installing bat"
 if is_ubuntu; then
-	echo "Installing bat"
 	try_sudo apt-get install --assume-yes bat
 
 	# The .deb package installs `bat` as `batcat`, so let's symlink it back.
 	mkdir -p ~/.local/bin
 	ln -sf /usr/bin/batcat ~/.local/bin/bat
+elif is_macos; then
+    brew install bat
 fi
 
 # Install Rust
