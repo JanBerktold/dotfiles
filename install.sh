@@ -133,6 +133,8 @@ fi
 
 # Install Rust
 echo "Install Rust"
-curl https://sh.rustup.rs -sSf | sh -s -- -y
+# We pass in --no-modify-path, as our symlink for ~/.config/fish appears to confuse the installer.
+# We've setup the paths manually in ~/.config/fish.
+curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
 
 echo "dotfiles install finished"
