@@ -132,6 +132,7 @@ elif is_macos; then
 fi
 
 # Install Rust
+echo "Install Rust"
 curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 echo "dotfiles install finished"
