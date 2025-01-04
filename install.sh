@@ -3,7 +3,13 @@
 # Abort in case of any errors
 set -e
 
-is_wsl2 () { return $(grep -i Microsoft /proc/version); }
+is_wsl2 () {
+    if is_macos; then
+        return 1
+    fi
+
+    return $(grep -i Microsoft /proc/version);
+}
 
 is_ubuntu() {
     if [ -f /etc/os-release ]; then
@@ -12,6 +18,11 @@ is_ubuntu() {
         fi
     fi
     return 1
+}
+
+is_macos() {
+    [ "$(uname)" = "Darwin" ]
+    return $?
 }
 
 try_sudo() {
@@ -49,37 +60,56 @@ get_username() {
 # Typically, this would be ~/dotfiles, but we can't rely on that.
 dotfiles="$(pwd)"
 
-if ! is_ubuntu; then
-	echo "Currently, only Ubuntu is supported"
-	exit 1
+if ! { is_ubuntu || is_macos; }; then
+    echo "Currently, only Ubuntu and macOS are supported"
+    exit 1
 fi
 
 # Install Fish
-echo "Updating package lists..."
-try_sudo apt-get update
+if is_ubuntu; then
+    echo "Updating package lists..."
+    try_sudo apt-get update
 
-# Check if fish is already installed
-if ! command -v fish >/dev/null 2>&1; then
-	try_sudo apt-get install --assume-yes fish
+    try_sudo apt-get install --assume-yes fish
 
-	# Check if fish is already in /etc/shells
-	if ! grep -q "^$FISH_PATH$" /etc/shells; then
-        	echo "Adding Fish to /etc/shells..."
-        	try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
-        fi
-	        
-	echo "Changing default shell to Fish..."
-	try_sudo chsh -s "$(which fish)" "$(get_username)"
+elif is_macos; then
+    echo "Installing fish on macos"
+
+    brew install fish
+fi
+
+FISH_PATH=$(command -v fish)
+if [ -z "$FISH_PATH" ]; then
+    echo "Error: Fish installation failed - binary not found"
+    exit 1
+fi
+ 
+# Check if fish is already in /etc/shells
+if ! grep -q "^$FISH_PATH$" /etc/shells; then
+    echo "Adding Fish to /etc/shells..."
+    try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
+fi
+
+# Change default shell to fish, if not already done.
+if [ "$SHELL" != "$FISH_PATH" ]; then
+    echo "Changing default shell to Fish..."
+    try_sudo chsh -s "$FISH_PATH" "$(get_username)"
+else
+    echo "Fish is already the default shell"
 fi
 
 # Setup the fish config
 mkdir -p ~/.config
-ln -sf $dotfiles/fish ~/.config/fish 
+ln -sf "$dotfiles/fish" ~/.config/fish 
+
+# Setup the git config
+echo "setting up $dotfiles/git"
+ln -sf "$dotfiles/git" ~/.config/
 
 # Ensure we have git installed
 if is_ubuntu; then
 	try_sudo apt-get update
-	try_sudo apt-get install --assume-yes git
+	try_sudo apt-get install --assume-yes git vim curl build-essential htop
 fi
 
 # If we're running on WSL2, then let's use the Windows 1Password agent.
@@ -90,13 +120,21 @@ if is_wsl2; then
 fi
 
 # Install [bat]https://github.com/sharkdp/bat), and replace cat with it.
+echo "Installing bat"
 if is_ubuntu; then
-	echo "Installing bat"
 	try_sudo apt-get install --assume-yes bat
 
 	# The .deb package installs `bat` as `batcat`, so let's symlink it back.
 	mkdir -p ~/.local/bin
 	ln -sf /usr/bin/batcat ~/.local/bin/bat
+elif is_macos; then
+    brew install bat
 fi
+
+# Install Rust
+echo "Install Rust"
+# We pass in --no-modify-path, as our symlink for ~/.config/fish appears to confuse the installer.
+# We've setup the paths manually in ~/.config/fish.
+curl https://sh.rustup.rs -sSf | sh -s -- -y --no-modify-path
 
 echo "dotfiles install finished"

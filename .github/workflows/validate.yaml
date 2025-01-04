@@ -12,3 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - run: ./test/test-ubuntu.sh
+  validate-setup-on-macos-14:
+    name: Run setup.sh on macOS
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v3
+      - run: ./test/test-macos.sh
