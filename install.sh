@@ -3,7 +3,13 @@
 # Abort in case of any errors
 set -e
 
-is_wsl2 () { return $(grep -i Microsoft /proc/version); }
+is_wsl2 () {
+    if is_macos; then
+        return 1
+    fi
+
+    return $(grep -i Microsoft /proc/version);
+}
 
 is_ubuntu() {
     if [ -f /etc/os-release ]; then
@@ -12,6 +18,11 @@ is_ubuntu() {
         fi
     fi
     return 1
+}
+
+is_macos() {
+    [ "$(uname)" = "Darwin" ]
+    return $?
 }
 
 try_sudo() {
@@ -49,35 +60,51 @@ get_username() {
 # Typically, this would be ~/dotfiles, but we can't rely on that.
 dotfiles="$(pwd)"
 
-if ! is_ubuntu; then
-	echo "Currently, only Ubuntu is supported"
-	exit 1
+if ! { is_ubuntu || is_macos; }; then
+    echo "Currently, only Ubuntu and macOS are supported"
+    exit 1
 fi
 
 # Install Fish
-echo "Updating package lists..."
-try_sudo apt-get update
+if is_ubuntu; then
+    echo "Updating package lists..."
+    try_sudo apt-get update
 
-# Check if fish is already installed
-if ! command -v fish >/dev/null 2>&1; then
-	try_sudo apt-get install --assume-yes fish
+    try_sudo apt-get install --assume-yes fish
+
+elif is_macos; then
+    echo "Installing fish on macos"
+
+    brew install fish
 fi
 
+FISH_PATH=$(command -v fish)
+if [ -z "$FISH_PATH" ]; then
+    echo "Error: Fish installation failed - binary not found"
+    exit 1
+fi
+ 
 # Check if fish is already in /etc/shells
 if ! grep -q "^$FISH_PATH$" /etc/shells; then
-        echo "Adding Fish to /etc/shells..."
-       	try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
+    echo "Adding Fish to /etc/shells..."
+    try_sudo bash -c "echo $FISH_PATH >> /etc/shells"
 fi
 
-echo "Changing default shell to Fish..."
-try_sudo chsh -s "$(which fish)" "$(get_username)"
+# Change default shell to fish, if not already done.
+if [ "$SHELL" != "$FISH_PATH" ]; then
+    echo "Changing default shell to Fish..."
+    try_sudo chsh -s "$FISH_PATH" "$(get_username)"
+else
+    echo "Fish is already the default shell"
+fi
 
 # Setup the fish config
 mkdir -p ~/.config
-ln -sf $dotfiles/fish ~/.config/fish 
+ln -sf "$dotfiles/fish" ~/.config/fish 
 
 # Setup the git config
-ln -sf $dotfiles/git ~/.config/git
+echo "setting up $dotfiles/git"
+ln -sf "$dotfiles/git" ~/.config/
 
 # Ensure we have git installed
 if is_ubuntu; then
@@ -103,8 +130,6 @@ if is_ubuntu; then
 fi
 
 # Install Rust
-if is_ubuntu; then
-	curl https://sh.rustup.rs -sSf | sh -s -- -y
-fi
+curl https://sh.rustup.rs -sSf | sh -s -- -y
 
 echo "dotfiles install finished"
