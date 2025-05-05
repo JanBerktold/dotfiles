@@ -67,6 +67,11 @@ fi
 
 # Install Fish
 if is_ubuntu; then
+    # Make sure that we get fish v4.0. Not only is it the Rust port (yay), but
+    # fish 3.x depends on lynx which can will attempt to open web pages (badly)
+    # in the terminal, breaking most authentication flows.
+    try_sudo add-apt-repository --yes ppa:fish-shell/release-4
+
     echo "Updating package lists..."
     try_sudo apt-get update
 
@@ -108,7 +113,6 @@ ln -sf "$dotfiles/git" ~/.config/
 
 # Ensure we have git installed
 if is_ubuntu; then
-	try_sudo apt-get update
 	try_sudo apt-get install --assume-yes git vim curl build-essential htop
 fi
 
